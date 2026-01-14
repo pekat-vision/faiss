@@ -118,10 +118,10 @@ setup(
     author_email="faiss@meta.com",
     license="MIT",
     keywords="search nearest neighbors",
-    install_requires=["numpy", "packaging"],
+    install_requires=["numpy>=1.21,<2.0", "packaging"],
     packages=["faiss", "faiss.contrib", "faiss.contrib.torch"],
     package_data={
-        "faiss": ["*.so", "*.pyd", "*.a"],
+        "faiss": ["*.so", "*.pyd", "*.a", "*.dll"],
     },
     zip_safe=False,
 )

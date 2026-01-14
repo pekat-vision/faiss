@@ -16,6 +16,7 @@
 #include <faiss/gpu/utils/MatrixMult.cuh>
 #include <faiss/gpu/utils/PtxUtils.cuh>
 #include <faiss/gpu/utils/Transpose.cuh>
+#include <initializer_list>
 
 namespace faiss {
 namespace gpu {
@@ -458,8 +459,8 @@ void runPQCodeDistancesMM(
     // Perform a batch MM:
     // (sub q) x {(q * c)(sub dim) x (sub dim)(code)} =>
     // (sub q) x {(q * c)(code)}
-    auto residualView3 = residual.view<3>(
-            {pqCentroids.getSize(0),
+    auto residualView3 = residual.template view<3>(
+            std::initializer_list<idx_t>{pqCentroids.getSize(0),
              coarseIndices.getSize(0) * coarseIndices.getSize(1),
              pqCentroids.getSize(1)});
 
@@ -490,16 +491,16 @@ void runPQCodeDistancesMM(
                 {pqCentroids.getSize(0) * coarseIndices.getSize(0) *
                  coarseIndices.getSize(1)});
 
-        auto residualView2 = residual.view<2>(
-                {pqCentroids.getSize(0) * coarseIndices.getSize(0) *
+        auto residualView2 = residual.template view<2>(
+                std::initializer_list<idx_t>{pqCentroids.getSize(0) * coarseIndices.getSize(0) *
                          coarseIndices.getSize(1),
                  pqCentroids.getSize(1)});
 
         runL2Norm(residualView2, true, residualNorms, true, stream);
 
         // Sum ||q - c||^2 along rows
-        auto residualDistanceView2 = residualDistance.view<2>(
-                {pqCentroids.getSize(0) * coarseIndices.getSize(0) *
+        auto residualDistanceView2 = residualDistance.template view<2>(
+                std::initializer_list<idx_t>{pqCentroids.getSize(0) * coarseIndices.getSize(0) *
                          coarseIndices.getSize(1),
                  pqCentroids.getSize(2)});
 
@@ -509,8 +510,8 @@ void runPQCodeDistancesMM(
     // Transpose (sub q)(q * c)(code) to (q * c)(sub q)(code) (which
     // is where we build our output distances). L2 version of this has an added
     // -2 multiplicative factor
-    auto outCodeDistancesView = outCodeDistancesF.view<3>(
-            {coarseIndices.getSize(0) * coarseIndices.getSize(1),
+    auto outCodeDistancesView = outCodeDistancesF.template view<3>(
+            std::initializer_list<idx_t>{coarseIndices.getSize(0) * coarseIndices.getSize(1),
              outCodeDistances.getSize(2),
              outCodeDistances.getSize(3)});
 
@@ -529,8 +530,8 @@ void runPQCodeDistancesMM(
 
         runTransposeAny(pqCentroids, 1, 2, pqCentroidsTranspose, stream);
 
-        auto pqCentroidsTransposeView = pqCentroidsTranspose.view<2>(
-                {pqCentroids.getSize(0) * pqCentroids.getSize(2),
+        auto pqCentroidsTransposeView = pqCentroidsTranspose.template view<2>(
+                std::initializer_list<idx_t>{pqCentroids.getSize(0) * pqCentroids.getSize(2),
                  pqCentroids.getSize(1)});
 
         // The norm of each (sub q)(code)
@@ -544,8 +545,8 @@ void runPQCodeDistancesMM(
 
         // View output as (q * c)(sub q * code), and add centroid norm to
         // each row
-        auto outDistancesCodeViewCols = outCodeDistancesView.view<2>(
-                {coarseIndices.getSize(0) * coarseIndices.getSize(1),
+        auto outDistancesCodeViewCols = outCodeDistancesView.template view<2>(
+                std::initializer_list<idx_t>{coarseIndices.getSize(0) * coarseIndices.getSize(1),
                  outCodeDistances.getSize(2) * outCodeDistances.getSize(3)});
 
         runSumAlongColumns(pqCentroidsNorm, outDistancesCodeViewCols, stream);

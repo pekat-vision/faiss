@@ -13,6 +13,11 @@
 #include <faiss/gpu/utils/PtxUtils.cuh>
 #include <faiss/gpu/utils/WarpShuffles.cuh>
 
+// Windows SDK rpcndr.h defines "small" as "char" which breaks variable names
+#ifdef small
+#undef small
+#endif
+
 namespace faiss {
 namespace gpu {
 

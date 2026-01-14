@@ -11,6 +11,21 @@ import sys
 
 from packaging.version import Version
 
+# On Windows, add the faiss package directory to DLL search path
+# This allows finding bundled DLLs like MKL, OpenMP, and CUDA libs
+if platform.system() == "Windows":
+    _faiss_dir = os.path.dirname(os.path.abspath(__file__))
+    if hasattr(os, 'add_dll_directory'):
+        os.add_dll_directory(_faiss_dir)
+    # Also try to add torch's lib directory for CUDA DLLs
+    try:
+        import torch
+        _torch_lib = os.path.join(os.path.dirname(torch.__file__), 'lib')
+        if os.path.isdir(_torch_lib) and hasattr(os, 'add_dll_directory'):
+            os.add_dll_directory(_torch_lib)
+    except ImportError:
+        pass
+
 
 def supported_instruction_sets():
     """

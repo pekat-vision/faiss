@@ -9,6 +9,12 @@
 
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+
+// Windows SDK rpcndr.h defines "small" as "char" which breaks variable names
+#ifdef small
+#undef small
+#endif
+
 #include <faiss/impl/FaissAssert.h>
 #include <vector>
 

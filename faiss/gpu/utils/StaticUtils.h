@@ -9,6 +9,11 @@
 
 #include <cuda.h>
 
+// Windows SDK rpcndr.h defines "small" as "char" which breaks variable names
+#ifdef small
+#undef small
+#endif
+
 // allow usage for non-CUDA files
 #ifndef __host__
 #define __host__

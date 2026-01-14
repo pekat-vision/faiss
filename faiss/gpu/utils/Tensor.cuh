@@ -10,6 +10,12 @@
 #include <assert.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+
+// Windows SDK rpcndr.h defines "small" as "char" which breaks variable names
+#ifdef small
+#undef small
+#endif
+
 #include <faiss/Index.h> // idx_t
 #include <stdint.h>
 #include <initializer_list>
