@@ -8,6 +8,7 @@ from __future__ import print_function
 import os
 import platform
 import shutil
+import glob
 
 from setuptools import setup
 
@@ -26,25 +27,33 @@ if platform.system() != "AIX":
     ext = ".pyd" if platform.system() == "Windows" else ".so"
 else:
     ext = ".a"
-prefix = "Release/" * (platform.system() == "Windows")
 
-swigfaiss_generic_lib = f"{prefix}_swigfaiss{ext}"
-swigfaiss_avx2_lib = f"{prefix}_swigfaiss_avx2{ext}"
-swigfaiss_avx512_lib = f"{prefix}_swigfaiss_avx512{ext}"
-swigfaiss_avx512_spr_lib = f"{prefix}_swigfaiss_avx512_spr{ext}"
-callbacks_lib = f"{prefix}libfaiss_python_callbacks{ext}"
-swigfaiss_sve_lib = f"{prefix}_swigfaiss_sve{ext}"
+# Check for Release/ prefix (MSBuild) or no prefix (Ninja/Make)
+# Try Release/ first, fall back to current directory
+def find_lib(name):
+    """Find library with or without Release/ prefix"""
+    release_path = f"Release/{name}"
+    if os.path.exists(release_path):
+        return release_path
+    if os.path.exists(name):
+        return name
+    return None
+
+swigfaiss_generic_lib = find_lib(f"_swigfaiss{ext}")
+swigfaiss_avx2_lib = find_lib(f"_swigfaiss_avx2{ext}")
+swigfaiss_avx512_lib = find_lib(f"_swigfaiss_avx512{ext}")
+swigfaiss_avx512_spr_lib = find_lib(f"_swigfaiss_avx512_spr{ext}")
+callbacks_lib = find_lib(f"libfaiss_python_callbacks{ext}")
+swigfaiss_sve_lib = find_lib(f"_swigfaiss_sve{ext}")
 faiss_example_external_module_lib = f"_faiss_example_external_module{ext}"
 
-found_swigfaiss_generic = os.path.exists(swigfaiss_generic_lib)
-found_swigfaiss_avx2 = os.path.exists(swigfaiss_avx2_lib)
-found_swigfaiss_avx512 = os.path.exists(swigfaiss_avx512_lib)
-found_swigfaiss_avx512_spr = os.path.exists(swigfaiss_avx512_spr_lib)
-found_callbacks = os.path.exists(callbacks_lib)
-found_swigfaiss_sve = os.path.exists(swigfaiss_sve_lib)
-found_faiss_example_external_module_lib = os.path.exists(
-    faiss_example_external_module_lib
-)
+found_swigfaiss_generic = swigfaiss_generic_lib is not None
+found_swigfaiss_avx2 = swigfaiss_avx2_lib is not None
+found_swigfaiss_avx512 = swigfaiss_avx512_lib is not None
+found_swigfaiss_avx512_spr = swigfaiss_avx512_spr_lib is not None
+found_callbacks = callbacks_lib is not None
+found_swigfaiss_sve = swigfaiss_sve_lib is not None
+found_faiss_example_external_module_lib = os.path.exists(faiss_example_external_module_lib)
 
 if platform.system() != "AIX":
     assert (
@@ -55,8 +64,9 @@ if platform.system() != "AIX":
         or found_swigfaiss_sve
         or found_faiss_example_external_module_lib
     ), (
-        f"Could not find {swigfaiss_generic_lib} or "
-        f"{swigfaiss_avx2_lib} or {swigfaiss_avx512_lib} or {swigfaiss_avx512_spr_lib} or {swigfaiss_sve_lib} or {faiss_example_external_module_lib}. "
+        f"Could not find _swigfaiss{ext} or _swigfaiss_avx2{ext} or "
+        f"_swigfaiss_avx512{ext} or _swigfaiss_avx512_spr{ext} or "
+        f"_swigfaiss_sve{ext} or _faiss_example_external_module{ext}. "
         f"Faiss may not be compiled yet."
     )
 
@@ -82,7 +92,7 @@ if found_swigfaiss_avx512_spr:
 
 if found_callbacks:
     print(f"Copying {callbacks_lib}")
-    shutil.copyfile(callbacks_lib, f"faiss/{callbacks_lib}")
+    shutil.copyfile(callbacks_lib, f"faiss/libfaiss_python_callbacks{ext}")
 
 if found_swigfaiss_sve:
     print(f"Copying {swigfaiss_sve_lib}")
@@ -91,13 +101,42 @@ if found_swigfaiss_sve:
 
 if found_faiss_example_external_module_lib:
     print(f"Copying {faiss_example_external_module_lib}")
-    shutil.copyfile(
-        "faiss_example_external_module.py", "faiss/faiss_example_external_module.py"
-    )
-    shutil.copyfile(
-        faiss_example_external_module_lib,
-        f"faiss/_faiss_example_external_module{ext}",
-    )
+    shutil.copyfile("faiss_example_external_module.py", "faiss/faiss_example_external_module.py")
+    shutil.copyfile(faiss_example_external_module_lib, f"faiss/_faiss_example_external_module{ext}")
+
+# Windows: Bundle MKL and OpenMP DLLs
+if platform.system() == "Windows":
+    mkl_base = r"C:\Program Files (x86)\Intel\oneAPI\mkl\latest\bin"
+    omp_base = r"C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin"
+    
+    mkl_dlls = [
+        "mkl_core.2.dll",
+        "mkl_intel_thread.2.dll",
+        "mkl_rt.2.dll",
+        "mkl_def.2.dll",
+        "mkl_avx2.2.dll",
+        "mkl_vml_def.2.dll",
+        "mkl_vml_avx2.2.dll",
+        "mkl_vml_cmpt.2.dll",
+    ]
+    
+    omp_dlls = ["libiomp5md.dll"]
+    
+    for dll in mkl_dlls:
+        src = os.path.join(mkl_base, dll)
+        if os.path.exists(src):
+            print(f"Bundling {dll}")
+            shutil.copyfile(src, f"faiss/{dll}")
+        else:
+            print(f"Warning: {dll} not found at {src}")
+    
+    for dll in omp_dlls:
+        src = os.path.join(omp_base, dll)
+        if os.path.exists(src):
+            print(f"Bundling {dll}")
+            shutil.copyfile(src, f"faiss/{dll}")
+        else:
+            print(f"Warning: {dll} not found at {src}")
 
 long_description = """
 Faiss is a library for efficient similarity search and clustering of dense
