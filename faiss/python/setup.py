@@ -112,10 +112,9 @@ if found_faiss_example_external_module_lib:
     shutil.copyfile("faiss_example_external_module.py", "faiss/faiss_example_external_module.py")
     shutil.copyfile(faiss_example_external_module_lib, f"faiss/_faiss_example_external_module{ext}")
 
-# Windows: Bundle MKL and OpenMP DLLs
+# Windows: Bundle MKL DLLs (but not libiomp5md.dll - use PyTorch's OpenMP)
 if platform.system() == "Windows":
     mkl_base = r"C:\Program Files (x86)\Intel\oneAPI\mkl\latest\bin"
-    omp_base = r"C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin"
     
     mkl_dlls = [
         "mkl_core.2.dll",
@@ -128,18 +127,8 @@ if platform.system() == "Windows":
         "mkl_vml_cmpt.2.dll",
     ]
     
-    omp_dlls = ["libiomp5md.dll"]
-    
     for dll in mkl_dlls:
         src = os.path.join(mkl_base, dll)
-        if os.path.exists(src):
-            print(f"Bundling {dll}")
-            shutil.copyfile(src, f"faiss/{dll}")
-        else:
-            print(f"Warning: {dll} not found at {src}")
-    
-    for dll in omp_dlls:
-        src = os.path.join(omp_base, dll)
         if os.path.exists(src):
             print(f"Bundling {dll}")
             shutil.copyfile(src, f"faiss/{dll}")
