@@ -115,7 +115,6 @@ if found_faiss_example_external_module_lib:
 # Windows: Bundle MKL DLLs (but not libiomp5md.dll - use PyTorch's OpenMP)
 if platform.system() == "Windows":
     import sys
-    import site
 
     mkl_dlls = [
         "mkl_avx2.2.dll",
