@@ -131,8 +131,8 @@ if platform.system() == "Windows":
     # Find MKL DLLs in current Python env Library/bin (pip, mkl-dev, conda)
     mkl_dirs = []
     py_lib_bin = os.path.join(sys.prefix, "Library", "bin")
-    if os.path.isdir(py_lib_bin):
-        mkl_dirs.append(py_lib_bin)
+    # if os.path.isdir(py_lib_bin):
+    mkl_dirs.append(py_lib_bin)
 
     # Fallback to Intel oneAPI MKL default path
     mkl_dirs.append(r"C:\Program Files (x86)\Intel\oneAPI\mkl\latest\bin")
@@ -141,6 +141,7 @@ if platform.system() == "Windows":
         found = False
         for mkl_base in mkl_dirs:
             src = os.path.join(mkl_base, dll)
+            print(f"Looking for {src}")
             if os.path.exists(src):
                 print(f"Bundling {dll} from {src}")
                 shutil.copyfile(src, f"faiss/{dll}")
